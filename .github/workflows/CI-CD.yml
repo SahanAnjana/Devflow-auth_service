@@ -60,5 +60,5 @@ jobs:
             sudo docker run -d --name ${{ env.DEPLOYMENT_NAME }} -p 8000:8000 ${{ env.IMAGE_NAME }}
 
             # Delete none tagged images
-            sudo docker rmi $(sudo docker images -f "dangling=true" -q)
+            # sudo docker rmi $(sudo docker images -f "dangling=true" -q)
           EOF
