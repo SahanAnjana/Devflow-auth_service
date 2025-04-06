@@ -48,7 +48,7 @@ jobs:
 
       - name: Deploy to SSH Server
         run: |
-          ssh -o StrictHostKeyChecking=no root@${{ env.DEPLOYMENT_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ env.DEPLOYMENT_HOST }} << EOF
             # Stop and remove the existing container if it exists
             sudo docker stop ${{ env.DEPLOYMENT_NAME }} || true
             sudo docker rm ${{ env.DEPLOYMENT_NAME }} || true
