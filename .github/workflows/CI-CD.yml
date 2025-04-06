@@ -7,7 +7,7 @@ on:
 env:
   DEPLOYMENT_NAME: auth-service
   DEPLOYMENT_HOST: 140.245.213.62
-  IMAGE_NAME: devtrexofficial/kelani-lms:v1.0
+  IMAGE_NAME: sahananjana/devflow-auth_service:v1.0
 
 jobs:
   build:
