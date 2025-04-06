@@ -57,7 +57,7 @@ jobs:
             sudo docker pull ${{ env.IMAGE_NAME }}
             
             # Run the new container
-            sudo docker run -d --name ${{ env.DEPLOYMENT_NAME }} -p 8080:8080 ${{ env.IMAGE_NAME }}
+            sudo docker run -d --name ${{ env.DEPLOYMENT_NAME }} -p 8000:8000 ${{ env.IMAGE_NAME }}
 
             # Delete none tagged images
             sudo docker rmi $(sudo docker images -f "dangling=true" -q)
