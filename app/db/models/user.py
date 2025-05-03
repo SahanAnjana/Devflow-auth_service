@@ -19,6 +19,7 @@ class User(Base):
     # Relationships
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     user_roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
+    reset_tokens = relationship("PasswordResetToken", back_populates="user", cascade="all, delete-orphan")
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
@@ -32,6 +33,22 @@ class RefreshToken(Base):
     
     # Relationships
     user = relationship("User", back_populates="refresh_tokens")
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    token = Column(String(255), unique=True, index=True, nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    is_used = Column(Boolean, default=False)
+    
+    # Relationship with user
+    user = relationship("User", back_populates="reset_tokens")
+    
+    def is_expired(self) -> bool:
+        return datetime.utcnow() > self.expires_at
 
 class Role(Base):
     __tablename__ = "roles"

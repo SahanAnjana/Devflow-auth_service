@@ -27,6 +27,13 @@ class UserResponse(UserBase):
     class Config:
         orm_mode = True
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr 
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+    token: str
+
 # Token schemas
 class TokenResponse(BaseModel):
     access_token: str

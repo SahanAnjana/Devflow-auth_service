@@ -12,12 +12,16 @@ from app.crud.user import (
     get_user_by_id,
     get_users,
     update_user,
-    delete_user
+    delete_user,
+    update_password
 )
 from app.crud.token import (
     create_refresh_token,
     get_refresh_token,
-    invalidate_refresh_token
+    invalidate_refresh_token,
+    create_password_reset_token,
+    get_password_reset_token,
+    invalidate_password_reset_token
 )
 from app.crud.role import (
     get_all_roles,
@@ -37,6 +41,7 @@ from app.api.dependencies import (
     get_current_admin_user
 )
 from app.schemas import (
+    ForgotPasswordRequest,
     UserCreate,
     UserResponse,
     UserUpdate,
@@ -45,8 +50,10 @@ from app.schemas import (
     RoleCreate,
     RoleResponse,
     RoleUpdate,
-    UserRoleAssign
+    UserRoleAssign,
+    ResetPasswordRequest
 )
+from app.core.email import send_password_reset_email
 
 router = APIRouter()
 
@@ -138,6 +145,79 @@ async def logout(
     # Invalidate the refresh token
     invalidate_refresh_token(db, refresh_data.refresh_token)
     return None
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(
+    forgot_request: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Send a password reset email to the user.
+    """
+    user = get_user_by_email(db, forgot_request.email)
+    
+    # Always return success even if email not found for security reasons
+    if not user:
+        return {"message": "If your email exists in our system, you will receive a password reset link."}
+    
+    # Create password reset token
+    reset_token = create_password_reset_token(db, user.id)
+    
+    # Send email with reset token
+    reset_link = f"{settings.FRONTEND_URL}/reset-password/{reset_token.token}"
+    send_password_reset_email(user.email, reset_link)
+    
+    return {"message": "If your email exists in our system, you will receive a password reset link."}
+
+@router.get("/validate-reset-token/{token}", status_code=status.HTTP_200_OK)
+async def validate_reset_token(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Validate a password reset token.
+    """
+    token_entry = get_password_reset_token(db, token)
+    
+    if not token_entry or token_entry.is_used or token_entry.is_expired():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
+    
+    return {"valid": True}
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    reset_request: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset user password using a valid token.
+    """
+    token_entry = get_password_reset_token(db, reset_request.token)
+    
+    if not token_entry or token_entry.is_used or token_entry.is_expired():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
+    
+    # Get user and update password
+    user = get_user_by_id(db, token_entry.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update password
+    update_password(db, user.id, reset_request.new_password)
+    
+    # Mark token as used
+    invalidate_password_reset_token(db, reset_request.token)
+    
+    return {"message": "Password reset successful"}
 
 # User Management APIs
 

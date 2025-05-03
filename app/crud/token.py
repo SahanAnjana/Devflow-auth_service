@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.db.models.user import RefreshToken
+from app.db.models.user import RefreshToken, PasswordResetToken
 from app.core.config import settings
 
 def create_refresh_token(db: Session, user_id: str) -> RefreshToken:
@@ -59,3 +59,40 @@ def delete_expired_tokens(db: Session) -> int:
     )
     db.commit()
     return expired_tokens
+
+def create_password_reset_token(db: Session, user_id: str) -> PasswordResetToken:
+    existing_tokens = db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user_id,
+        PasswordResetToken.is_used == False,
+        PasswordResetToken.expires_at > datetime.utcnow()
+    ).all()
+    
+    for token in existing_tokens:
+        token.is_used = True
+    
+    db_token = PasswordResetToken(
+        token=str(uuid.uuid4()),
+        user_id=user_id,
+        expires_at=datetime.utcnow() + timedelta(hours=settings.PASSWORD_RESET_TOKEN_EXPIRE_HOURS)
+    )
+    db.add(db_token)
+    db.commit()
+    db.refresh(db_token)
+    return db_token
+
+
+def get_password_reset_token(db: Session, token: str) -> Optional[PasswordResetToken]:
+    return db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == token,
+        PasswordResetToken.expires_at > datetime.utcnow(),
+        PasswordResetToken.is_used == False
+    ).first()
+
+
+def invalidate_password_reset_token(db: Session, token: str) -> bool:
+    db_token = db.query(PasswordResetToken).filter(PasswordResetToken.token == token).first()
+    if db_token:
+        db_token.is_used = True
+        db.commit()
+        return True
+    return False
