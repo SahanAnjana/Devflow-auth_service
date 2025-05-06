@@ -15,6 +15,19 @@ engine = create_engine(
     }
 )
 
+# Test database engine
+test_engine = create_engine(
+    settings.SQLALCHEMY_TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
+
+# Test session factory
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=test_engine
+)
+
 # Session factory
 SessionLocal = sessionmaker(
     autocommit=False,
