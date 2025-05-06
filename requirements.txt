@@ -11,3 +11,4 @@ pymysql
 python-multipart
 alembic
 cryptography
+pytest
