@@ -12,3 +12,5 @@ python-multipart
 alembic
 cryptography
 pytest
+pytest-cov
+codecov
